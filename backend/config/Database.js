@@ -4,7 +4,7 @@ const configureDB = async (req, res) => {
 
     try {
 
-        const mongoConnect = await mongoose.connect('mongodb://127.0.0.1:27017/Devtown_task')
+        const mongoConnect = await mongoose.connect('mongodb://127.0.0.1:27017/KRITE_task')
         console.log('Succesfully connected to mongodb')
     }
 

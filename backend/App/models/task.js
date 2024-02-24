@@ -1,14 +1,32 @@
+const mongoose = require('mongoose')
 
-class TaskModel {
-    constructor(taskId, title, description, dueDate,createdby) {
-      this.taskId = taskId;
-      this.title = title;
-      this.description = description;
-      this.dueDate = dueDate;
-      this.createdby =createdby;
+const { Schema } = mongoose
 
-    }
-  }
-  
-  module.exports = TaskModel;
-  
+const taskSchema = new Schema({
+
+    title: {
+        type: String,
+        required: true
+
+    },
+     description :{
+       
+         type:String,
+         required:true
+    },
+
+    dueDate:{
+      type:Date,
+      required :true
+    },
+    userId:{
+      type:Schema.Types.ObjectId,
+      ref:'Users',
+      required:true
+  }})
+
+
+
+const Task = mongoose.model('Task', taskSchema)
+
+module.exports = Task

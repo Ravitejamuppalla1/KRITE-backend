@@ -1,125 +1,60 @@
-const AWS = require('aws-sdk');
-const { v4: uuidv4 } = require('uuid');
-const TaskModel = require('../models/task');
+const Task = require('../models/task')
 
-const dynamoDB = new AWS.DynamoDB();
-const taskCtlr = {}
-
-taskCtlr.createTask = async (req, res) => {
-  const { title, description, dueDate } = req.body;
-  const taskId = uuidv4();
-  const userId = req.user.id;
+const taskctlr = {}
 
 
-  const task = new TaskModel(taskId, title, description, dueDate, userId);
-  const dynamoParams = {
-    TableName: 'Tasks',
-    Item: {
-      taskId: { S: task.taskId },
-      title: { S: task.title },
-      description: { S: task.description },
-      dueDate: { S: task.dueDate },
-      createdby: { S: task.createdby }
-    },
-  };
+taskctlr.listTasks = async (req, res) => {
+  const {id} = req.params
   try {
-    await dynamoDB.putItem(dynamoParams).promise();
-    res.status(201).json({ message: 'Task created successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' });
+      const tasks = await Task.find({userId:req.user.id})
+      res.json(tasks)
   }
-};
+  catch (e) {
+      res.json(e)
+  }
+}
 
+// CREATE
 
-
-//Edit Task
-
-
-taskCtlr.editTask = async (req, res) => {
-  const {title, description, dueDate } = req.body;
-  const { taskId } = req.params;
-
-  const dynamoParams = {
-    TableName: 'Tasks',
-    Key: {
-      taskId: { S: taskId },
-    },
-    UpdateExpression: 'SET title = :title, description = :description, dueDate = :dueDate',
-    ExpressionAttributeValues: {
-      ':title': { S: title },
-      ':description': { S: description },
-      ':dueDate': { S: dueDate },
-    },
-    ReturnValues: 'ALL_NEW', 
-  };
-
+taskctlr.createTask = async (req, res) => {
   try {
-    const result = await dynamoDB.updateItem(dynamoParams).promise();
-
-    const updatedTask = {
-      taskId: result.Attributes.taskId.S,
-      title: result.Attributes.title.S,
-      description: result.Attributes.description.S,
-      dueDate: result.Attributes.dueDate.S,
-    };
-    res.status(200).json({ message: 'Task updated successfully', updatedTask });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' });
+      const { body } = req
+      const newtask = await Task.create({ ...body, userId: req.user.id })
+      res.json(newtask)
   }
-};
+  catch (e) {
+      res.json(e)
+  }
+}
 
-
-// Delete Task
-taskCtlr.deleteTask = async (req, res) => {
-  const { taskId } = req.params; 
-
-  const dynamoParams = {
-    TableName: 'Tasks',
-    Key: {
-      taskId: { S: taskId },
-    },
-  };
-
+//update
+taskctlr.editTask = async (req, res) => {
   try {
-    await dynamoDB.deleteItem(dynamoParams).promise();
-
-    res.status(200).json({ message: 'Task deleted successfully', taskId });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' });
+      const { taskId } = req.params
+      const {body} = req
+      const newtask = await Task.findByIdAndUpdate(taskId,body,{new:true,runValidators:true})
+      res.json(newtask)
   }
-};
+  catch (e) {
+      res.json(e)
+  }
+}
 
-//Lists
+// DELETE
 
-taskCtlr.listTasks = async (req, res) => {
-  const userId = req.user.id; 
-
-  const dynamoParams = {
-    TableName: 'Tasks',
-    FilterExpression: 'createdby = :userId',
-    ExpressionAttributeValues: {
-      ':userId': { S: userId },
-    },
-  };
-
+taskctlr.deleteTask = async (req, res) => {
   try {
-    const result = await dynamoDB.scan(dynamoParams).promise();
-
-    const tasks = result.Items.map(item => ({
-      taskId: item.taskId.S,
-      title: item.title.S,
-      description: item.description.S,
-      dueDate: item.dueDate.S,
-    }));
-
-    res.status(200).json({ tasks });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' });
+      const id = req.params.taskId
+      const data = await Task.findByIdAndDelete(id)
+      if (data) {
+          res.json(data)
+      } else {
+          res.json({})
+      }
+  } catch (e) {
+      res.json(e.message)
   }
-};
+}
 
 
-
-
-
-module.exports = taskCtlr
+module.exports = taskctlr
